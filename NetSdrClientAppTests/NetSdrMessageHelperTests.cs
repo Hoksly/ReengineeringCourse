@@ -64,6 +64,80 @@ namespace NetSdrClientAppTests
             Assert.That(parametersBytes.Count(), Is.EqualTo(parametersLength));
         }
 
-        //TODO: add more NetSdrMessageHelper tests
+        [Test]
+        public void TranslateMessage_ControlItem_RoundTrip()
+        {
+            // Arrange
+            var type = NetSdrMessageHelper.MsgTypes.SetControlItem;
+            var code = NetSdrMessageHelper.ControlItemCodes.ReceiverFrequency;
+            var parameters = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+
+            // Act
+            byte[] msg = NetSdrMessageHelper.GetControlItemMessage(type, code, parameters);
+            bool success = NetSdrMessageHelper.TranslateMessage(msg, out var decodedType, out var decodedCode, out _, out var body);
+
+            // Assert
+            Assert.That(success, Is.True);
+            Assert.That(decodedType, Is.EqualTo(type));
+            Assert.That(decodedCode, Is.EqualTo(code));
+            Assert.That(body, Is.EqualTo(parameters));
+        }
+
+        [Test]
+        public void TranslateMessage_DataItem_RoundTrip()
+        {
+            // Arrange
+            var type = NetSdrMessageHelper.MsgTypes.DataItem0;
+            var parameters = new byte[] { 0xAA, 0xBB, 0xCC, 0xDD };
+
+            // Act
+            byte[] msg = NetSdrMessageHelper.GetDataItemMessage(type, parameters);
+            bool success = NetSdrMessageHelper.TranslateMessage(msg, out var decodedType, out _, out ushort seqNum, out var body);
+
+            // Assert
+            Assert.That(success, Is.True);
+            Assert.That(decodedType, Is.EqualTo(type));
+            Assert.That(seqNum, Is.EqualTo(0));
+            Assert.That(body, Is.EqualTo(parameters));
+        }
+
+        [Test]
+        public void GetSamples_16bit_ReturnsCorrectValues()
+        {
+            // Arrange: two 16-bit samples: 0x0102 and 0x0304
+            var body = new byte[] { 0x02, 0x01, 0x04, 0x03 };
+
+            // Act
+            var samples = NetSdrMessageHelper.GetSamples(16, body).ToList();
+
+            // Assert
+            Assert.That(samples.Count, Is.EqualTo(2));
+            Assert.That(samples[0], Is.EqualTo(0x0102));
+            Assert.That(samples[1], Is.EqualTo(0x0304));
+        }
+
+        [Test]
+        public void GetSamples_8bit_ReturnsCorrectValues()
+        {
+            // Arrange: three 8-bit samples
+            var body = new byte[] { 0x10, 0x20, 0x30 };
+
+            // Act
+            var samples = NetSdrMessageHelper.GetSamples(8, body).ToList();
+
+            // Assert
+            Assert.That(samples.Count, Is.EqualTo(3));
+            Assert.That(samples[0], Is.EqualTo(0x10));
+            Assert.That(samples[1], Is.EqualTo(0x20));
+            Assert.That(samples[2], Is.EqualTo(0x30));
+        }
+
+        [Test]
+        public void GetSamples_InvalidSize_ThrowsException()
+        {
+            // sampleSize of 40 bits = 5 bytes > 4 bytes max
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                NetSdrMessageHelper.GetSamples(40, new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 }).ToList());
+        }
     }
 }
