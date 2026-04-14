@@ -123,5 +123,40 @@ namespace EchoServerTests
 
             Assert.That(logOutput.ToString(), Does.Contain("Echoed"));
         }
+
+        [Test]
+        public async Task StartAsync_StopsCleanlyWhenCancelled()
+        {
+            // Covers StartAsync body: listener start, while loop, OperationCanceledException path, shutdown log
+            var logger = new StringWriter();
+            var server = new EchoServer(59876, logger);
+
+            var startTask = server.StartAsync();
+            await Task.Delay(80); // let AcceptTcpClientAsync begin awaiting
+            server.Stop();
+
+            Assert.DoesNotThrowAsync(() => startTask);
+            Assert.That(logger.ToString(), Does.Contain("started"));
+        }
+
+        [Test]
+        public async Task UdpTimedSender_SendMessageCallback_ExecutesWithoutException()
+        {
+            // Covers SendMessageCallback: Random.Shared, BuildMessage call, UdpClient.Send
+            using var sender = new UdpTimedSender("127.0.0.1", 59877);
+            sender.StartSending(50); // short interval so callback fires quickly
+
+            await Task.Delay(200); // wait for at least one callback execution
+
+            sender.StopSending();
+        }
+
+        [Test]
+        public void EchoServer_DefaultLogger_UsesConsoleOut()
+        {
+            // Covers logger ?? Console.Out branch in constructor
+            var server = new EchoServer(5001); // no logger passed
+            Assert.DoesNotThrow(() => server.Stop());
+        }
     }
 }
