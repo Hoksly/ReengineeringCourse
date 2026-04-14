@@ -117,9 +117,9 @@ namespace NetSdrClientApp.Networking
                         }
                     }
                 }
-                catch (OperationCanceledException ex)
+                catch (OperationCanceledException)
                 {
-                    //empty
+                    // Expected when cancellation is requested via Disconnect
                 }
                 catch (Exception ex)
                 {
