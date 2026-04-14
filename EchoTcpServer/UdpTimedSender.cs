@@ -12,6 +12,7 @@ namespace EchoTcpServer
         private readonly UdpClient _udpClient;
         private Timer? _timer;
         private ushort _sequence;
+        private bool _disposed;
 
         public UdpTimedSender(string host, int port)
         {
@@ -28,7 +29,7 @@ namespace EchoTcpServer
             _timer = new Timer(SendMessageCallback, null, 0, intervalMilliseconds);
         }
 
-        public byte[] BuildMessage(ushort sequence, byte[] payload)
+        public static byte[] BuildMessage(ushort sequence, byte[] payload)
         {
             return (new byte[] { 0x04, 0x84 })
                 .Concat(BitConverter.GetBytes(sequence))
@@ -41,7 +42,7 @@ namespace EchoTcpServer
             try
             {
                 byte[] samples = new byte[1024];
-                new Random().NextBytes(samples);
+                Random.Shared.NextBytes(samples);
                 _sequence++;
 
                 byte[] msg = BuildMessage(_sequence, samples);
@@ -62,10 +63,23 @@ namespace EchoTcpServer
             _timer = null;
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    StopSending();
+                    _udpClient.Dispose();
+                }
+                _disposed = true;
+            }
+        }
+
         public void Dispose()
         {
-            StopSending();
-            _udpClient.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }

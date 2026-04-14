@@ -12,7 +12,7 @@ namespace EchoTcpServer
         private readonly int _port;
         private readonly TextWriter _logger;
         private TcpListener? _listener;
-        private CancellationTokenSource _cts;
+        private readonly CancellationTokenSource _cts;
 
         public EchoServer(int port, TextWriter? logger = null)
         {
@@ -25,14 +25,14 @@ namespace EchoTcpServer
         {
             _listener = new TcpListener(IPAddress.Any, _port);
             _listener.Start();
-            _logger.WriteLine($"Server started on port {_port}.");
+            await _logger.WriteLineAsync($"Server started on port {_port}.");
 
             while (!_cts.Token.IsCancellationRequested)
             {
                 try
                 {
                     TcpClient client = await _listener.AcceptTcpClientAsync(_cts.Token);
-                    _logger.WriteLine("Client connected.");
+                    await _logger.WriteLineAsync("Client connected.");
                     _ = Task.Run(() => HandleClientAsync(client.GetStream(), _cts.Token));
                 }
                 catch (OperationCanceledException)
@@ -45,7 +45,7 @@ namespace EchoTcpServer
                 }
             }
 
-            _logger.WriteLine("Server shutdown.");
+            await _logger.WriteLineAsync("Server shutdown.");
         }
 
         public async Task HandleClientAsync(Stream stream, CancellationToken token)
@@ -59,16 +59,16 @@ namespace EchoTcpServer
                        (bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, token)) > 0)
                 {
                     await stream.WriteAsync(buffer, 0, bytesRead, token);
-                    _logger.WriteLine($"Echoed {bytesRead} bytes to the client.");
+                    await _logger.WriteLineAsync($"Echoed {bytesRead} bytes to the client.");
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.WriteLine($"Error: {ex.Message}");
+                await _logger.WriteLineAsync($"Error: {ex.Message}");
             }
             finally
             {
-                _logger.WriteLine("Client disconnected.");
+                await _logger.WriteLineAsync("Client disconnected.");
             }
         }
 
@@ -77,7 +77,6 @@ namespace EchoTcpServer
             _cts.Cancel();
             _listener?.Stop();
             _cts.Dispose();
-            _logger.WriteLine("Server stopped.");
         }
     }
 }

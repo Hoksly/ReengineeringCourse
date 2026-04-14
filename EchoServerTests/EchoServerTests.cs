@@ -76,7 +76,7 @@ namespace EchoServerTests
             ushort sequence = 42;
 
             // Act
-            var msg = sender.BuildMessage(sequence, payload);
+            var msg = UdpTimedSender.BuildMessage(sequence, payload);
 
             // Assert: header bytes, sequence number, then payload
             Assert.That(msg[0], Is.EqualTo(0x04));
