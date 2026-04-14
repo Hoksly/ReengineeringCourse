@@ -50,6 +50,7 @@ namespace NetSdrClientApp.Networking
             try
             {
                 _cts?.Cancel();
+                _cts?.Dispose();
                 _udpClient?.Close();
                 Console.WriteLine("Stopped listening for UDP messages.");
             }
@@ -57,6 +58,11 @@ namespace NetSdrClientApp.Networking
             {
                 Console.WriteLine($"Error while stopping: {ex.Message}");
             }
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is UdpClientWrapper other && _localEndPoint.Equals(other._localEndPoint);
         }
 
         public override int GetHashCode()
