@@ -82,7 +82,7 @@ namespace NetSdrClientApp.Messages
                 msgEnumarable = msgEnumarable.Skip(_msgControlItemLength);
                 msgLength -= _msgControlItemLength;
 
-                if (Enum.IsDefined(typeof(ControlItemCodes), value))
+                if (Enum.IsDefined(typeof(ControlItemCodes), (int)value))
                 {
                     itemCode = (ControlItemCodes)value;
                 }

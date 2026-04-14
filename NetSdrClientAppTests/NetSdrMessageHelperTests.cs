@@ -86,9 +86,12 @@ namespace NetSdrClientAppTests
         [Test]
         public void TranslateMessage_DataItem_RoundTrip()
         {
-            // Arrange
+            // Arrange: data item layout is [header][2-byte seq number][body]
             var type = NetSdrMessageHelper.MsgTypes.DataItem0;
-            var parameters = new byte[] { 0xAA, 0xBB, 0xCC, 0xDD };
+            var expectedSeqNum = (ushort)0;
+            var expectedBody = new byte[] { 0xCC, 0xDD };
+            // parameters = seq number bytes + body bytes
+            var parameters = new byte[] { 0x00, 0x00, 0xCC, 0xDD };
 
             // Act
             byte[] msg = NetSdrMessageHelper.GetDataItemMessage(type, parameters);
@@ -97,8 +100,8 @@ namespace NetSdrClientAppTests
             // Assert
             Assert.That(success, Is.True);
             Assert.That(decodedType, Is.EqualTo(type));
-            Assert.That(seqNum, Is.EqualTo(0));
-            Assert.That(body, Is.EqualTo(parameters));
+            Assert.That(seqNum, Is.EqualTo(expectedSeqNum));
+            Assert.That(body, Is.EqualTo(expectedBody));
         }
 
         [Test]

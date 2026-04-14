@@ -136,10 +136,11 @@ namespace NetSdrClientApp
             }
 
             _responseTaskSource = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var responseTask = _responseTaskSource.Task;
 
             await _tcpClient.SendMessageAsync(msg);
 
-            return await _responseTaskSource.Task;
+            return await responseTask;
         }
 
         private void _tcpClient_MessageReceived(object? sender, byte[] e)
