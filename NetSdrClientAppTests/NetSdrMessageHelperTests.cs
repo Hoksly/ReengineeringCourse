@@ -144,6 +144,17 @@ namespace NetSdrClientAppTests
         }
 
         [Test]
+        public void GetControlItemMessage_OversizedParameters_ThrowsArgumentException()
+        {
+            // 8188 bytes params + 2 itemCode + 2 header = 8192 > 8191 max → throws
+            Assert.Throws<ArgumentException>(() =>
+                NetSdrMessageHelper.GetControlItemMessage(
+                    NetSdrMessageHelper.MsgTypes.SetControlItem,
+                    NetSdrMessageHelper.ControlItemCodes.ReceiverState,
+                    new byte[8188]));
+        }
+
+        [Test]
         public void GetDataItemMessage_MaxSize_TriggersEdgeCase()
         {
             // 8192 bytes of parameters = header(2) + params(8192) = 8194 = _maxDataItemMessageLength
