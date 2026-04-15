@@ -154,9 +154,49 @@ namespace EchoServerTests
         [Test]
         public void EchoServer_DefaultLogger_UsesConsoleOut()
         {
-            // Covers logger ?? Console.Out branch in constructor
-            var server = new EchoServer(5001); // no logger passed
+            var server = new EchoServer(5001);
             Assert.DoesNotThrow(() => server.Stop());
+        }
+
+        [Test]
+        public async Task HandleClientAsync_CatchesStreamException_LogsError()
+        {
+            // Covers the catch(Exception) block in HandleClientAsync
+            using var logOutput = new StringWriter();
+            var server = new EchoServer(5001, logOutput);
+
+            using var stream = new ThrowingReadStream();
+
+            await server.HandleClientAsync(stream, CancellationToken.None);
+
+            Assert.That(logOutput.ToString(), Does.Contain("Error"));
+        }
+
+        [Test]
+        public void UdpTimedSender_DoubleDispose_DoesNotThrow()
+        {
+            // Covers the if (!_disposed) guard — second Dispose is a no-op
+            var sender = new UdpTimedSender("127.0.0.1", 60005);
+            sender.Dispose();
+            Assert.DoesNotThrow(() => sender.Dispose());
+        }
+
+        private class ThrowingReadStream : Stream
+        {
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => true;
+            public override long Length => 0;
+            public override long Position { get; set; }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct)
+                => throw new IOException("Simulated stream error");
+
+            public override int Read(byte[] buffer, int offset, int count) => throw new IOException("Simulated stream error");
+            public override void Write(byte[] buffer, int offset, int count) { }
+            public override void Flush() { }
+            public override long Seek(long offset, SeekOrigin origin) => 0;
+            public override void SetLength(long value) { }
         }
     }
 }

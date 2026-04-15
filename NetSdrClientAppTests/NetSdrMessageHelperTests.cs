@@ -142,5 +142,28 @@ namespace NetSdrClientAppTests
             Assert.Throws<ArgumentOutOfRangeException>(() =>
                 NetSdrMessageHelper.GetSamples(40, new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 }).ToList());
         }
+
+        [Test]
+        public void GetDataItemMessage_MaxSize_TriggersEdgeCase()
+        {
+            // 8192 bytes of parameters = header(2) + params(8192) = 8194 = _maxDataItemMessageLength
+            // This triggers the lengthWithHeader = 0 edge case in GetHeader
+            // and the msgLength == 0 -> 8194 edge case in TranslateHeader
+            var type = NetSdrMessageHelper.MsgTypes.DataItem0;
+            var parameters = new byte[8192];
+
+            byte[] msg = NetSdrMessageHelper.GetDataItemMessage(type, parameters);
+
+            // Header encodes as 0 for this special case
+            var headerNum = BitConverter.ToUInt16(msg.Take(2).ToArray());
+            var encodedType = (NetSdrMessageHelper.MsgTypes)(headerNum >> 13);
+            Assert.That(encodedType, Is.EqualTo(type));
+            Assert.That(msg.Length, Is.EqualTo(8194));
+
+            // Round-trip: TranslateHeader decodes 0-length back to 8194
+            bool success = NetSdrMessageHelper.TranslateMessage(msg, out var decodedType, out _, out _, out var body);
+            Assert.That(decodedType, Is.EqualTo(type));
+            Assert.That(body.Length, Is.EqualTo(8190)); // 8192 - 2 (seq number bytes)
+        }
     }
 }
